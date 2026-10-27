@@ -20,7 +20,7 @@ async function embed(text){
        input: text
    });
 
-    return result;
+    return result.embeddings[0];
 }
 
 function cosineSimilarity(v1, v2){
@@ -36,24 +36,32 @@ function cosineSimilarity(v1, v2){
     return dot / (Math.sqrt(A) * Math.sqrt(B));
 }
 
-async function search(query, DB){
+async function search(query, DB, topAnswers = 2){
     const queryEmbedding = await embed(query);
 
     const results = DB.map(item => ({
-        ...item,
-        score: cosineSimilarity(item, queryEmbedding)
-    })).sort((a, b) => b.score - a.score);
+        id: item.id,
+        chunk: item.chunk,
+        score: cosineSimilarity(item.embedding, queryEmbedding)
+    }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, topAnswers)
+
+    console.log(results)
 
     return results;
 }
 
 async function chat(question, context){
+    
+    const searchRes = await search(question, context);
+
     const query = `
         Anser only based on the given context
-        If you don't know, say so.
+        If you don't know the answer, say so.
 
         Context:
-        ${context}
+        ${searchRes.map(res => res.chunk).join("\n\n")}
 
         Query:
         ${question}
@@ -92,26 +100,25 @@ async function chat(question, context){
     ];
    
     const records = [];
+    let id = 0;
 
     for(const drop of data_drops){
         const chunks = chunkText(drop);
 
-        for(const [i, chunk] in chunks.entries()){
+        for(const chunk of chunks){
             const embedding = await embed(chunk);
             
             records.push({
-                id: `${i}`,
+                id: id++,
                 chunk,
                 embedding
             });
         }
     }
     
-    const question = "How does AI recognize keyboard keys?"
+    const question = "Where is the important file located?"
 
     const answer = await chat(question, records);
 
-    console.log(answer);
-        
 })
 ()
