@@ -47,37 +47,51 @@ async function search(query, DB, topAnswers = 2){
         .sort((a, b) => b.score - a.score)
         .slice(0, topAnswers)
 
-    console.log(results)
-
     return results;
 }
 
+const history = [
+    {
+        role: 'system', 
+        content: 'Answer the questions about the documents based on the context. For questions about the converstation itself, use the earlier messages. Don\'t treat requests for repeating as doubts or needs for retrieval from documents. If neither solutions works, say you don\'t know!'
+    }
+];
+
 async function chat(question, context){
-    
-    const searchRes = await search(question, context);
+   
+    console.log("history", history.length)
 
-    const query = `
-        Anser only based on the given context
-        If you don't know the answer, say so.
+    const searchRes = (await search(question, context)).sort(r => r.score >= 0.5);
+    const contextText = searchRes.length ? searchRes.map(res => res.chunk).join("\n\n") : null
 
-        Context:
-        ${searchRes.map(res => res.chunk).join("\n\n")}
+    let query = "";
+    if(contextText){
+        query = `
+            Context:
+            ${contextText}
 
-        Query:
-        ${question}
+            Query:
+            ${question}
 
-    `;
+        `;
+    }else{
+        query = `
+            Answer the question based on the conversation history so far if it helps.
+
+            Query: ${question}
+        `
+    }
 
     const response = await ollama.chat({
         model: "llama3",
         messages: [
+            ...history,
             {role: 'user', content: query}
         ],
-        options: {temperature: 0.2, num_ctx: 4000},
+        options: {temperature: 0.4, num_ctx: 4000},
         stream: true
     });
 
-    let isThinking = false;
     let answer = ""
 
     for await (const chunk of response){
@@ -89,7 +103,10 @@ async function chat(question, context){
            answer += chunk.message.content;
         }
     }
-            
+    
+    history.push({role: 'user', content: question})
+    history.push({role: 'assistant', content: answer})
+
     return answer;
 }
 
@@ -117,8 +134,17 @@ async function chat(question, context){
     }
     
     const question = "Where is the important file located?"
+    const question2 = "What was your answer again?"
 
-    const answer = await chat(question, records);
+    await chat(question, records);
+    console.log("\n----\n")
+    await chat(question2, records);
+    console.log("\n----\n")
+    await chat("Repeat that.", records);
+    console.log("\n----\n")
+    await chat("And how does AI recognize keyboard keys?", records);
+    console.log("\n----\n")
+    await chat("Summarize our conversation!", records);
 
 })
 ()
