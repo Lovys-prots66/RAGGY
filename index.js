@@ -1,5 +1,6 @@
 import ollama from 'ollama'
 
+// Turns input strings into trimmed chunks
 function chunkText(text, overlap = 150, size = 500){
    let start = 0; 
     let chunks = [];
@@ -14,6 +15,7 @@ function chunkText(text, overlap = 150, size = 500){
     return chunks.map(chunk => chunk.trim()).filter(Boolean);
 }
 
+// Transforms text/string into a vector
 async function embed(text){
    const result = await ollama.embed({
        model: "qwen3-embedding:0.6b",
@@ -23,6 +25,7 @@ async function embed(text){
     return result.embeddings[0];
 }
 
+// Calculates angle (similarity) of vectors
 function cosineSimilarity(v1, v2){
     let dot = 0;
     let A = 0, B = 0;
@@ -36,6 +39,7 @@ function cosineSimilarity(v1, v2){
     return dot / (Math.sqrt(A) * Math.sqrt(B));
 }
 
+// Searches from a database for relevant data 
 async function search(query, DB, topAnswers = 2){
     const queryEmbedding = await embed(query);
 
@@ -50,6 +54,7 @@ async function search(query, DB, topAnswers = 2){
     return results;
 }
 
+// History of prompts, questions and answers
 const history = [
     {
         role: 'system', 
@@ -57,11 +62,12 @@ const history = [
     }
 ];
 
+// Asks the model questions based on context
 async function chat(question, context){
    
-    console.log("history", history.length)
-
     const searchRes = (await search(question, context)).sort(r => r.score >= 0.5);
+
+    // Use the context if provided, otherwise use the conversation history 
     const contextText = searchRes.length ? searchRes.map(res => res.chunk).join("\n\n") : null
 
     let query = "";
@@ -94,6 +100,7 @@ async function chat(question, context){
 
     let answer = ""
 
+    // Write to the console the response as it's generated
     for await (const chunk of response){
         if(chunk.message.thinking){
             process.stdout.write("Thinking...\n");
@@ -103,19 +110,24 @@ async function chat(question, context){
            answer += chunk.message.content;
         }
     }
-    
+   
+    // Store the question and answer in the history
     history.push({role: 'user', content: question})
     history.push({role: 'assistant', content: answer})
 
     return answer;
 }
 
+// Main
 (async function(){
+
+    // Test data
     const data_drops = [
         "AI recognizes keyboard keys through sound",
         "The important file is located somewhere in the F or G drive"
     ];
-   
+  
+    // Chunk and embed the test data 
     const records = [];
     let id = 0;
 
@@ -132,7 +144,8 @@ async function chat(question, context){
             });
         }
     }
-    
+   
+    // Testing the chatbot
     const question = "Where is the important file located?"
     const question2 = "What was your answer again?"
 
