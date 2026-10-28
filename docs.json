@@ -1,0 +1,74 @@
+[
+  {
+    "id": "doc-001",
+    "title": "Deployment Policy",
+    "category": "devops",
+    "content": "Production deployments must be triggered through the CI/CD pipeline. Developers must not deploy directly from their local machines. Every deployment requires a successful test run and approval from a project maintainer. If a deployment fails, the team must investigate the logs before attempting another deployment."
+  },
+  {
+    "id": "doc-002",
+    "title": "CI Pipeline Failures",
+    "category": "devops",
+    "content": "When a CI pipeline fails, first identify the failed job. Inspect the job logs to determine whether the failure comes from dependency installation, linting, tests, or compilation. Do not rerun a failed pipeline repeatedly without investigating the cause. If the failure is caused by an external service, document the incident and retry when the service recovers."
+  },
+  {
+    "id": "doc-003",
+    "title": "Dependency Management",
+    "category": "development",
+    "content": "Node.js projects using npm should commit their package-lock.json file to version control. In CI environments, use npm ci to install dependencies from the lockfile. The command fails when package.json and package-lock.json are inconsistent. Use npm install when intentionally adding or updating dependencies during development."
+  },
+  {
+    "id": "doc-004",
+    "title": "API Authentication",
+    "category": "security",
+    "content": "Private API endpoints must authenticate requests before processing protected resources. Missing or invalid credentials should produce an HTTP 401 response. Authenticated users who lack the required permissions should receive HTTP 403. Authentication tokens must not be written to application logs."
+  },
+  {
+    "id": "doc-005",
+    "title": "Database Connection Errors",
+    "category": "troubleshooting",
+    "content": "If a Node.js application cannot connect to MongoDB, verify the database URI, network connectivity, database availability, and credentials. Check whether the database server accepts connections from the application's host. Avoid logging connection strings because they may contain passwords. Connection retries should use a bounded retry strategy with appropriate delays."
+  },
+  {
+    "id": "doc-006",
+    "title": "Incident Severity",
+    "category": "operations",
+    "content": "A Severity 1 incident occurs when a critical production service is unavailable for most users or when a major security breach is suspected. A Severity 2 incident affects an important feature but leaves the core service operational. A Severity 3 incident covers minor defects with available workarounds. Severity 1 incidents require immediate escalation to the incident response lead."
+  },
+  {
+    "id": "doc-007",
+    "title": "Backup and Recovery",
+    "category": "operations",
+    "content": "Production databases must have automated backups. Backup jobs should report success or failure to the operations team. A backup is not considered reliable until restoration has been tested. Recovery procedures must document the restoration steps and identify the maximum acceptable data loss and recovery time."
+  },
+  {
+    "id": "doc-008",
+    "title": "Code Review Requirements",
+    "category": "development",
+    "content": "Every pull request that modifies application logic must receive approval from at least one other developer. Reviewers should check correctness, security, maintainability, and test coverage. Changes to authentication, authorization, or database migrations require particular scrutiny. Authors should explain the purpose of the change and describe how it was tested."
+  },
+  {
+    "id": "doc-009",
+    "title": "Environment Variables",
+    "category": "security",
+    "content": "Environment-specific configuration should be provided through environment variables or an approved secrets manager. Secrets must never be committed to Git. Local development may use a .env file, but that file must be excluded through .gitignore. Production secrets must be managed separately from development credentials."
+  },
+  {
+    "id": "doc-010",
+    "title": "Test Strategy",
+    "category": "testing",
+    "content": "Unit tests verify individual functions or modules in isolation. Integration tests verify interactions between components such as an API and its database. End-to-end tests verify complete user-facing workflows. A passing unit test suite does not prove that database connectivity, authentication middleware, and external integrations work correctly together."
+  },
+  {
+    "id": "doc-011",
+    "title": "Rollback Procedure",
+    "category": "devops",
+    "content": "If a production release introduces a critical regression, the incident lead should assess whether to roll back to the last known good release. Before rollback, verify that the previous application version remains compatible with the current database schema. Database migrations that remove or irreversibly transform data may prevent a safe rollback."
+  },
+  {
+    "id": "doc-012",
+    "title": "Logging Guidelines",
+    "category": "observability",
+    "content": "Application logs should include timestamps, severity levels, and enough contextual information to diagnose failures. Errors should include a correlation ID when available so related requests can be traced across services. Logs must exclude passwords, access tokens, and other sensitive credentials. Excessively verbose logging can increase storage costs and make important errors harder to find."
+  }
+]
