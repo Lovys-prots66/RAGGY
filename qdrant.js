@@ -18,6 +18,13 @@ async function createCollection(name="items"){
     });
 }
 
+async function createIdx(collName, field, type){
+    await client.createPayloadIndex(collName, {
+        field_name: field,
+        field_schema: type
+    }, {wait: true});
+}
+
 async function getDocs(){
     const raw = await fs.readFile("docs.json", "utf8");
 
@@ -53,14 +60,20 @@ async function embed(collName){
     await client.upsert(collName, { points } );
 }
 
-async function search(query, collName){
+async function search(options){
+    const {query, collName, limit = 5, category} = options;
+
+    const filter = category ?
+        {must: [ { key: "category", match: { text: category } } ] } : {}
+
     const queryResults = await client.query(collName, {
         query: {
             text: query,
             model: modelName
         },
+        filter,
         with_payload: true,
-        limit: 7
+        limit
     });
 
     console.table(queryResults.points);
@@ -73,7 +86,12 @@ async function search(query, collName){
     // Commented lines because the collection has already been created and filled
     //await createCollection("files")
     //await embed("files");
+    await createIdx("files", "category", "text");
 
-    await search("What should be done when a CI pipeline fail?", "files");
-    await search("Define Severity incident levels", "files");
+    await search({
+        query: "What should be done when a CI pipeline fail?",
+        collName: "files",
+        category: "devops",
+        limit: 3 
+    });
 })();
